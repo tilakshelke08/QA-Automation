@@ -18,7 +18,7 @@ public class TestCase3FormValidation {
 
     @BeforeClass
     public void setUp() {
-        System.setProperty("webdriver.chrome.driver", "path/to/chromedriver");
+        System.setProperty("WebDriver.chrome.driver", "C:\\Program Files\\selenium\\driver\\chromedriver.exe");
         driver = new ChromeDriver();
         apple = new Components_Apple(driver);
         driver.get("https://account.apple.com/account");
