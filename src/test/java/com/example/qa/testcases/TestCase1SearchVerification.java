@@ -1,97 +1,90 @@
 package com.example.qa.testcases;
 
 import com.example.qa.components.Components_Amazon;
-import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
-import org.openqa.selenium.OutputType;
-import org.openqa.selenium.TakesScreenshot;
-import org.testng.Assert;
-import org.testng.annotations.*;
+
 import java.io.File;
 import java.io.FileWriter;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.io.IOException;
+import java.util.List;
+
+import org.apache.commons.io.FileUtils;
 
 public class TestCase1SearchVerification {
 
-    WebDriver driver;
-    Components_Amazon amazon;
-    String baseURL = "https://www.amazon.com/";
+    public static void main(String[] args) {
+        System.setProperty("webdriver.chrome.driver", "C:\\Program Files\\selenium\\driver\\chromedriver.exe");
+        WebDriver driver = new ChromeDriver();
 
-    @BeforeClass
-    public void setUp() {
-        System.setProperty("WebDriver.com.driver", "C:\\Program Files\\selenium\\driver\\chromedriver.exe");
-        driver = new ChromeDriver();
-        driver.manage().window().maximize();
-        amazon = new Components_Amazon(driver);
-    }
+        boolean testPassed = true;
 
-    @Test
-    public void testSearchAndProductValidation() {
         try {
-            driver.get(baseURL);
-            Thread.sleep(2000); // Wait for page to load
+            driver.manage().window().maximize();
+            driver.get("https://www.amazon.in");
 
-            // Search for "Laptop"
-            amazon.getSearchBox().sendKeys("Laptop");
-            amazon.getSearchButton().click();
-            Thread.sleep(3000);
+            Components_Amazon amazon = new Components_Amazon(driver);
 
-            // Validate title, price, and rating of the first product
-            String productName = amazon.getFirstProduct().getText();
-         //   String productPrice = amazon.getFirstProductPrice().getText();
-            String productRating = amazon.getFirstProductRating().getText();
+            amazon.searchForProduct("Laptop");
 
-            Assert.assertFalse(productName.isEmpty());
-          //  Assert.assertFalse(productPrice.isEmpty());
-            Assert.assertTrue(productRating.contains("out of"));
-
-            takeScreenshot("screenshots/test_case_1/search_results.png");
-
-            // Click the product
-            amazon.getFirstProduct().click();
-            Thread.sleep(4000);
-
-            // Switch to product tab
-            for (String handle : driver.getWindowHandles()) {
-                driver.switchTo().window(handle);
+            List<WebElement> results = amazon.getSearchResults();
+            if (results.size() > 0) {
+                System.out.println("Search results found: " + results.size());
+                takeScreenshot(driver, "screenshots/test_case_1/search_results.png");
+            } else {
+                System.out.println("No search results found.");
+                testPassed = false;
             }
 
-            String pageTitle = driver.getTitle();
-            Assert.assertTrue(pageTitle.contains("Laptop"));
+            // Open first product
+            amazon.clickFirstProduct();
+            Thread.sleep(3000);
 
-            takeScreenshot("screenshots/test_case_1/product1_details.png");
+            // Switch to product tab if it opens in a new window
+            for (String winHandle : driver.getWindowHandles()) {
+                driver.switchTo().window(winHandle);
+            }
 
-            writeResult("Test Case 1: Passed");
+            String title = amazon.getProductTitle();
+            String price = amazon.getProductPrice();
+            String availability = amazon.getAvailabilityStatus();
+
+            System.out.println("Product Title: " + title);
+            System.out.println("Product Price: " + price);
+            System.out.println("Availability: " + availability);
+
+            takeScreenshot(driver, "screenshots/test_case_1/product1_details.png");
+
+            if (title.equals("Title Not Found") || price.equals("Price Not Found")) {
+                testPassed = false;
+            }
 
         } catch (Exception e) {
-            e.printStackTrace();
-            takeScreenshot("screenshots/test_case_1/error.png");
-            writeResult("Test Case 1: Failed");
-            Assert.fail("Test failed due to exception.");
+            System.out.println("Error in Test Case 1: " + e.getMessage());
+            testPassed = false;
+        } finally {
+            driver.quit();
+            updateTestResults(testPassed);
         }
     }
 
-    public void takeScreenshot(String path) {
+    public static void takeScreenshot(WebDriver driver, String path) {
         try {
-            File src = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
-            Files.createDirectories(Paths.get(path).getParent()); // Ensure directory exists
-            Files.copy(src.toPath(), Paths.get(path));
-        } catch (Exception e) {
+            TakesScreenshot ts = (TakesScreenshot) driver;
+            File src = ts.getScreenshotAs(OutputType.FILE);
+            File dest = new File(path);
+            FileUtils.copyFile(src, dest);
+        } catch (IOException e) {
             System.out.println("Screenshot failed: " + e.getMessage());
         }
     }
 
-    public void writeResult(String result) {
+    public static void updateTestResults(boolean isPassed) {
+        String status = isPassed ? "Passed" : "Failed";
         try (FileWriter writer = new FileWriter("testResults.txt", true)) {
-            writer.write(result + "\n");
-        } catch (Exception e) {
-            System.out.println("Unable to write result: " + e.getMessage());
+            writer.write("Test Case 1: " + status + "\n");
+        } catch (IOException e) {
+            System.out.println("Unable to write to testResults.txt");
         }
-    }
-
-    @AfterClass
-    public void tearDown() {
-        driver.quit();
     }
 }

@@ -4,31 +4,65 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 
+import java.util.List;
+
 public class Components_Amazon {
 
-    private WebDriver driver;
+    WebDriver driver;
 
     public Components_Amazon(WebDriver driver) {
         this.driver = driver;
     }
 
-    public WebElement getSearchBox() {
-        return driver.findElement(By.id("twotabsearchtextbox"));
+    public void searchForProduct(String productName) {
+        try {
+            WebElement searchBox = driver.findElement(By.id("twotabsearchtextbox"));
+            searchBox.clear();
+            searchBox.sendKeys(productName);
+            driver.findElement(By.id("nav-search-submit-button")).click();
+            Thread.sleep(2000); // Let results load
+        } catch (Exception e) {
+            System.out.println("Error in searchForProduct: " + e.getMessage());
+        }
     }
 
-    public WebElement getSearchButton() {
-        return driver.findElement(By.id("nav-search-submit-button"));
+    public List<WebElement> getSearchResults() {
+        return driver.findElements(By.cssSelector("div.s-main-slot div[data-component-type='s-search-result']"));
     }
 
-    public WebElement getFirstProduct() {
-        return driver.findElement(By.xpath("//*[@id=\"4e4e5ddf-879e-4276-978c-30f42d83bf47\"]/div/div/span/div/div/div/div[1]/div/div[2]/div/span/a/div/img"));
+    public void clickFirstProduct() {
+        try {
+            List<WebElement> results = getSearchResults();
+            if (!results.isEmpty()) {
+                results.get(0).findElement(By.cssSelector("h2 a")).click();
+            }
+        } catch (Exception e) {
+            System.out.println("Error in clickFirstProduct: " + e.getMessage());
+        }
     }
 
-   // public WebElement getFirstProductPrice() {
-     //   return driver.findElement(By.cssSelector("div.s-main-slot div[data-index='1'] span.a-price"));
-    //}
+    public String getProductTitle() {
+        try {
+            return driver.findElement(By.id("productTitle")).getText().trim();
+        } catch (Exception e) {
+            return "Title Not Found";
+        }
+    }
 
-    public WebElement getFirstProductRating() {
-        return driver.findElement(By.cssSelector("a-icon a-icon-star a-star-4 cm-cr-review-stars-spacing-big"));
+    public String getProductPrice() {
+        try {
+            WebElement priceWhole = driver.findElement(By.cssSelector("span.a-price span.a-offscreen"));
+            return priceWhole.getText();
+        } catch (Exception e) {
+            return "Price Not Found";
+        }
+    }
+
+    public String getAvailabilityStatus() {
+        try {
+            return driver.findElement(By.id("availability")).getText().trim();
+        } catch (Exception e) {
+            return "Availability Not Found";
+        }
     }
 }
